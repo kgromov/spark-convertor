@@ -16,7 +16,9 @@
 	<properties>
 		<java.version>11</java.version>
 		<spark.version>3.3.1</spark.version>
+		<janino.version>3.0.16</janino.version>
 	</properties>
+
 	<dependencies>
 		<!--<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -58,16 +60,21 @@
 			<version>10.0.5</version>
 		</dependency>
 
-	<!--	<dependency>
+		<dependency>
 			<groupId>org.codehaus.janino</groupId>
 			<artifactId>commons-compiler</artifactId>
-			<version>3.1.9</version>
+			<version>${janino.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.codehaus.janino</groupId>
 			<artifactId>janino</artifactId>
-			<version>3.1.9</version>
-		</dependency>-->
+			<version>${janino.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

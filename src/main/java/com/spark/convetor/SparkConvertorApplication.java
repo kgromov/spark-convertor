@@ -1,8 +1,11 @@
 package com.spark.convetor;
 
-import org.apache.spark.api.java.JavaRDD;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.spark.convetor.model.DailyTemperatureDto;
+import com.spark.convetor.service.SqlSourceService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,6 +13,10 @@ import org.springframework.context.annotation.Bean;
 
 import java.util.List;
 
+import static com.fasterxml.jackson.databind.DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE;
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+
+@Slf4j
 @SpringBootApplication
 public class SparkConvertorApplication {
 
@@ -18,13 +25,23 @@ public class SparkConvertorApplication {
 	}
 
 	@Bean
-	public ApplicationRunner applicationRunner(JavaSparkContext sparkContext){
+	public ObjectMapper objectMapper() {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.registerModule(new JavaTimeModule());
+		objectMapper.configure(WRITE_DATES_AS_TIMESTAMPS, false);
+		objectMapper.configure(ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false);
+		return objectMapper;
+	}
+
+	@Bean
+	public ApplicationRunner applicationRunner(JavaSparkContext sparkContext, SqlSourceService sqlSourceService){
 		return args -> {
-			JavaRDD<String> userRDD = sparkContext.textFile("D:\\course_materials\\Hadoop\\ml-100k\\ml-100k\\u.user");
-			System.out.println(userRDD.count());
+			List<DailyTemperatureDto> dailyTemperatureDtos = sqlSourceService.readFromDb();
+			/*JavaRDD<String> userRDD = sparkContext.textFile("D:\\course_materials\\Hadoop\\ml-100k\\ml-100k\\u.user");
+			log.info("Lines of file (as RDD) u.user = {}", userRDD.count());
 			List<String> rows = userRDD.collect();
-			System.out.println(rows.subList(0, 10));
-			System.out.println("Partitions = "  + sparkContext.defaultMinPartitions());
+			log.info("First 10 lines = {}", rows.subList(0, 10));
+			log.info("Partitions = {}", sparkContext.defaultMinPartitions());*/
 		};
 	}
 }
