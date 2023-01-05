@@ -37,11 +37,7 @@ public class SparkConvertorApplication {
 	public ApplicationRunner applicationRunner(JavaSparkContext sparkContext, SqlSourceService sqlSourceService){
 		return args -> {
 			List<DailyTemperatureDto> dailyTemperatureDtos = sqlSourceService.readFromDb();
-			/*JavaRDD<String> userRDD = sparkContext.textFile("D:\\course_materials\\Hadoop\\ml-100k\\ml-100k\\u.user");
-			log.info("Lines of file (as RDD) u.user = {}", userRDD.count());
-			List<String> rows = userRDD.collect();
-			log.info("First 10 lines = {}", rows.subList(0, 10));
-			log.info("Partitions = {}", sparkContext.defaultMinPartitions());*/
+			sqlSourceService.exportToCsv();
 		};
 	}
 }
