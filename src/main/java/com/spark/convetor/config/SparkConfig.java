@@ -33,7 +33,10 @@ public class SparkConfig {
         return new SparkConf()
                 .setMaster("local")
                 .setSparkHome(environment.getProperty("SPARK_HOME"))
-                .setAppName("Spark converter");
+                .setAppName("Spark converter")
+         /*       .set("spark.mongodb.input.uri", "mongodb://localhost/DB.Collection")
+                .set("spark.mongodb.output.uri","mongodb://localhost/DB.Collection")*/
+                ;
     }
 
     @Bean

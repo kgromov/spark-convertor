@@ -64,3 +64,14 @@ SQLContext sqlContext = csvDS.sqlContext();
 Dataset<Row> csvDF = sqlContext.sql("select movie_id from movie_rating");
 ```
 
+### Issues and troubleshooting 
+* Export API to file system does not work - just fails with root cause:   
+```java
+    Caused by: java.io.IOException: Cannot run program "\bin\winutils.exe": CreateProcess error=216, This version of %1 is not compatible with the version of Windows you're running.
+```
+The only workaround - write by yourself with java.io/nio or do not use Windows :)
+* Unable to serialize to pojo as is from Dataset<String> neither with javaSerialization nor beanEncoders.   
+Workaround - extract serializer to a separate serializeable class (the whole tree of  fields should be serializeable as well)
+* Latest ``mongo-spark-connector`` just does not provide API documented in previous versions [docs](ttps://www.mongodb.com/docs/spark-connector/v2.3/java/read-from-mongodb/).   
+Some others API (e.g. Read/WriteConfig) became restricted for creation.
+

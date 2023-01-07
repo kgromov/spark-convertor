@@ -8,9 +8,6 @@ import com.spark.convetor.model.DailyTemperatureDto;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
 import org.springframework.stereotype.Service;
@@ -18,16 +15,19 @@ import org.springframework.util.StopWatch;
 
 import java.io.Serializable;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class SqlSourceService implements Serializable {
-    private final SparkSession sparkSession;
+public class SqlSourceService {
     private final DataFrameReader jdbcReader;
     private final SparkJdbcSettings jdbcSettings;
     private final ObjectMapper objectMapper;
@@ -36,21 +36,23 @@ public class SqlSourceService implements Serializable {
         // TODO: try with more specific one - jdbc(url,table,properties)
 //        return serializeAllFromJson();
 //        return serializeWithMapAndBeanEncoder();
-        return serializeFromRowRow();
+        return serializeFromRowDataset();
     }
 
     // Does not work due to:
     // Caused by: java.io.IOException: Cannot run program "\bin\winutils.exe": CreateProcess error=216, This version of %1 is not compatible with the version of Windows you're running.
     @SneakyThrows
     public void exportToCsv() {
+        Path pathToOutputCsvFile = Paths.get(".").normalize().resolve(jdbcSettings.getTableName() + ".csv");
         Dataset<Row> rows = jdbcReader.load();
-        String pathToOutputCsvFile = Paths.get(".").normalize().resolve(jdbcSettings.getTableName() + ".csv").toFile().getAbsolutePath();
-        Files.deleteIfExists(Paths.get(pathToOutputCsvFile));
+      /*  Files.deleteIfExists(pathToOutputCsvFile);
         rows.write()
                 .format("csv")
                 .option("header", true)
                 .option("delimiter", ";")
-                .csv(pathToOutputCsvFile);
+                .csv(pathToOutputCsvFile.toFile().getAbsolutePath());*/
+        String header = String.join(",", rows.columns());
+        Files.write(pathToOutputCsvFile, List.of(header), CREATE, WRITE);
     }
 
     // Around 4000 + 4000 ms
@@ -76,7 +78,7 @@ public class SqlSourceService implements Serializable {
     // Does not work due to: Caused by: java.io.NotSerializableException: org.apache.spark.sql.DataFrameReader
     private List<DailyTemperatureDto> serializeWithMapAndBeanEncoder() {
         StopWatch stopWatch = new StopWatch();
-        stopWatch.start("Load + toJson");
+        stopWatch.start("serializeWithMapAndBeanEncoder");
         Dataset<String> jsonDS = jdbcReader.load().toJSON();
         stopWatch.stop();
         log.info("Time to load and convert to json {} ms", stopWatch.getLastTaskTimeMillis());
@@ -87,9 +89,9 @@ public class SqlSourceService implements Serializable {
         return temperatureDtos;
     }
 
-    private List<DailyTemperatureDto> serializeFromRowRow() {
+    private List<DailyTemperatureDto> serializeFromRowDataset() {
         StopWatch stopWatch = new StopWatch();
-        stopWatch.start("serializeFromRowRow");
+        stopWatch.start("serializeFromRowDataset");
         Dataset<Row> dataset = jdbcReader.load();
         Map<String, Integer> fieldsPositions = new HashMap<>();
         List<DailyTemperatureDto> temperatureDtos = StreamSupport.stream(

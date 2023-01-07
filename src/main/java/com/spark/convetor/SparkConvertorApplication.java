@@ -3,6 +3,7 @@ package com.spark.convetor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.spark.convetor.model.DailyTemperatureDto;
+import com.spark.convetor.service.NoSqlSourceService;
 import com.spark.convetor.service.SqlSourceService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -34,10 +35,15 @@ public class SparkConvertorApplication {
 	}
 
 	@Bean
-	public ApplicationRunner applicationRunner(JavaSparkContext sparkContext, SqlSourceService sqlSourceService){
+	public ApplicationRunner applicationRunner(JavaSparkContext sparkContext,
+											   SqlSourceService sqlSourceService,
+											   NoSqlSourceService noSqlSourceService){
 		return args -> {
-			List<DailyTemperatureDto> dailyTemperatureDtos = sqlSourceService.readFromDb();
-			sqlSourceService.exportToCsv();
+			/*List<DailyTemperatureDto> dailyTemperatureDtos = sqlSourceService.readFromDb();
+			sqlSourceService.exportToCsv();*/
+
+			List<DailyTemperatureDto> dailyTemperatureDtos = noSqlSourceService.readFromDb();
+			noSqlSourceService.exportToJson();
 		};
 	}
 }
