@@ -37,8 +37,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.mongodb.spark</groupId>
-			<artifactId>mongo-spark-connector</artifactId>
-			<version>10.0.5</version>
+			<artifactId>mongo-spark-connector_2.13</artifactId>
+			<version>10.1.0</version>
 		</dependency>
 
 		<dependency>

@@ -52,7 +52,30 @@ public class SqlSourceService {
                 .option("delimiter", ";")
                 .csv(pathToOutputCsvFile.toFile().getAbsolutePath());*/
         String header = String.join(",", rows.columns());
-        Files.write(pathToOutputCsvFile, List.of(header), CREATE, WRITE);
+        String content = rows.toJSON().collectAsList().toString();
+
+       /*
+        As generic alternative for flat objects
+        TypeReference<List<LinkedHashMap<String, String>>> typeRef = new TypeReference<>() {};
+        List<LinkedHashMap<String, String>> linkedHashMaps = objectMapper.readValue(content, typeRef);
+        List<String> body1 = linkedHashMaps.stream().map(row -> String.join(",", row.values())).collect(Collectors.toList());*/
+        List<DailyTemperatureDto> temperatureDtos = objectMapper.readValue(content, new TypeReference<>() {
+        });
+        List<String> body = temperatureDtos.stream().map(this::mapDailyTemperatureDtoAsCommaSeparatedString).collect(Collectors.toList());
+        body.add(0, header);
+        Files.write(pathToOutputCsvFile, body, CREATE, WRITE);
+    }
+
+    private String mapDailyTemperatureDtoAsCommaSeparatedString(DailyTemperatureDto dto) {
+        List<String> fieldValues = List.of(
+                dto.getId().toString(),
+                dto.getDate().toString(),
+                dto.getAfternoonTemperature().toString(),
+                dto.getAfternoonTemperature().toString(),
+                dto.getMorningTemperature().toString(),
+                dto.getNightTemperature().toString()
+        );
+        return String.join(",", fieldValues);
     }
 
     // Around 4000 + 4000 ms

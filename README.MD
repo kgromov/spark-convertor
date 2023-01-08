@@ -63,6 +63,7 @@ What is interesting it's easy to convert text-based source Dataset to SQL-based:
 SQLContext sqlContext = csvDS.sqlContext();
 Dataset<Row> csvDF = sqlContext.sql("select movie_id from movie_rating");
 ```
+P.S. SqlContext is deprecated since spark 2.0 so it is better to use select over SparkSession
 
 ### Issues and troubleshooting 
 * Export API to file system does not work - just fails with root cause:   
