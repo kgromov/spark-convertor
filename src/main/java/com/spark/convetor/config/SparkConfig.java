@@ -34,6 +34,7 @@ public class SparkConfig {
                 .setMaster("local")
                 .setSparkHome(environment.getProperty("SPARK_HOME"))
                 .setAppName("Spark converter")
+//                .set("spark.sql.datetime.java8API.enabled", "true")
          /*       .set("spark.mongodb.input.uri", "mongodb://localhost/DB.Collection")
                 .set("spark.mongodb.output.uri","mongodb://localhost/DB.Collection")*/
                 ;
