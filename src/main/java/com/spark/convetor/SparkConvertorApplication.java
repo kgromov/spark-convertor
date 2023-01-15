@@ -43,7 +43,8 @@ public class SparkConvertorApplication {
 			sqlSourceService.exportToCsv();*/
             /*List<DailyTemperatureDto> dailyTemperatureDtos = noSqlSourceService.readFromDb();
             noSqlSourceService.exportToJson();*/
-            converterService.syncNoSqlWithSql();
+//            converterService.syncNoSqlWithSql();
+            converterService.fromSqlToNoSql();
         };
     }
 }

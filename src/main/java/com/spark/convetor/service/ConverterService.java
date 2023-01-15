@@ -7,10 +7,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.*;
-import org.apache.spark.sql.types.DateType;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -24,7 +25,7 @@ public class ConverterService {
 
     public void fromSqlToNoSql() {
         Dataset<Row> dataset = jdbcReader.load()
-                .drop("id")
+//                .drop("id")
                 .distinct();
         saveToMongo(dataset);
     }
@@ -87,30 +88,42 @@ public class ConverterService {
     }
 
     private <T> void saveToMongo(Dataset<T> dataset) {
-        log.info("Diff = {}", dataset.toJSON().collectAsList().toString());
+//        log.info("Diff = {}", dataset.toJSON().collectAsList().toString());
         log.info("Diff: count = {}", dataset.count());
         log.info("Columns: {}", dataset.columns());
         dataset.printSchema();    // just String java type converted to Date and that's it - why on earth?
 
-        JavaRDD<Row> subtract = dataset.drop("id").toJavaRDD();
+        // attempt to explicitly define schema (date as string) failed
+     /*   JavaRDD<Row> subtract = dataset.drop("id").toJavaRDD();
         StructType schema = new StructType()
                 .add("date", "string", false)
                 .add("morningTemperature", "double", true)
                 .add("afternoonTemperature", "double", true)
                 .add("eveningTemperature", "double", true)
                 .add("nightTemperature", "double", true);
-        Dataset<Row> dataFrame = sparkSession.createDataFrame(subtract, schema);
+        Dataset<Row> dataFrame = sparkSession.createDataFrame(subtract, schema);*/
 
-        dataset.as(Encoders.bean(DailyTemperatureDto.class))
-//        dataFrame
+        Dataset<Row> dataFrame = correlateDate(dataset);
+
+//        dataset.as(Encoders.bean(DailyTemperatureDto.class))
+        dataFrame
                 .drop("id")
                 .write()
                 .format("mongodb")
                 .option("uri", mongoDbSettings.getUri())
                 .option("connection.uri", mongoDbSettings.getUri())
                 .option("database", mongoDbSettings.getDatabase())
-                .option("collection", mongoDbSettings.getCollection() + "2")
+                .option("collection", mongoDbSettings.getCollection())
                 .mode(SaveMode.Overwrite)
                 .save();
+    }
+
+    private <T> Dataset<Row> correlateDate(Dataset<T> dataset) {
+        List<DailyTemperatureDto> dtos = dataset.as(Encoders.bean(DailyTemperatureDto.class))
+                .collectAsList()
+                .stream()
+                .peek(dto -> dto.setDate(dto.getDate().atTime(LocalTime.MIN).toLocalDate().plusDays(1L)))
+                .collect(Collectors.toList());
+        return sparkSession.createDataFrame(dtos, DailyTemperatureDto.class);
     }
 }

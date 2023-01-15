@@ -8,7 +8,6 @@ import com.spark.convetor.model.DailyTemperatureDto;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.DataFrameReader;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
@@ -33,6 +32,7 @@ public class SqlSourceService {
     private final DataFrameReader jdbcReader;
     private final SparkJdbcSettings jdbcSettings;
     private final ObjectMapper objectMapper;
+    private final DailyTemperatureDtoRowMapper rowMapper;
 
     public List<DailyTemperatureDto> readFromDb() {
         // TODO: try with more specific one - jdbc(url,table,properties)
@@ -104,12 +104,9 @@ public class SqlSourceService {
     private List<DailyTemperatureDto> serializeWithMapAndBeanEncoder() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start("serializeWithMapAndBeanEncoder");
-        Dataset<String> jsonDS = jdbcReader.load().toJSON();
+        List<DailyTemperatureDto> temperatureDtos = jdbcReader.load().as(Encoders.bean(DailyTemperatureDto.class)).collectAsList();
         stopWatch.stop();
-        log.info("Time to load and convert to json {} ms", stopWatch.getLastTaskTimeMillis());
-        MapFunction<String, DailyTemperatureDto> jsonToDto = this::fromJson;
-        List<DailyTemperatureDto> temperatureDtos = jsonDS.map(jsonToDto, Encoders.javaSerialization(DailyTemperatureDto.class)).collectAsList();
-        log.info("Time to collectAsList {} ms", stopWatch.getLastTaskTimeMillis());
+        log.info("Time to collectAsList with bean Encoder {} ms", stopWatch.getLastTaskTimeMillis());
         log.info("Read temperatures from SQL db (total records): {}", temperatureDtos.size());
         return temperatureDtos;
     }
@@ -123,18 +120,7 @@ public class SqlSourceService {
                         Spliterators.spliteratorUnknownSize(dataset.toLocalIterator(), Spliterator.ORDERED),
                         false
                 )
-                .map(row -> DailyTemperatureDto.builder()
-                        .id(row.getLong(fieldsPositions.computeIfAbsent("id", index -> row.fieldIndex("id"))))
-                        .date(row.getDate(fieldsPositions.computeIfAbsent("date", index -> row.fieldIndex("date"))).toLocalDate())
-                        .morningTemperature(row.getDouble(fieldsPositions.computeIfAbsent("morningTemperature",
-                                index -> row.fieldIndex("morningTemperature"))))
-                        .afternoonTemperature(row.getDouble(fieldsPositions.computeIfAbsent("afternoonTemperature",
-                                index -> row.fieldIndex("afternoonTemperature"))))
-                        .eveningTemperature(row.getDouble(fieldsPositions.computeIfAbsent("eveningTemperature",
-                                index -> row.fieldIndex("eveningTemperature"))))
-                        .nightTemperature(row.getDouble(fieldsPositions.computeIfAbsent("nightTemperature",
-                                index -> row.fieldIndex("nightTemperature"))))
-                        .build())
+                .map(rowMapper::fromRow)
                 .collect(Collectors.toList());
         stopWatch.stop();
         log.info("Time to serializeFromRowRow {} ms", stopWatch.getLastTaskTimeMillis());
