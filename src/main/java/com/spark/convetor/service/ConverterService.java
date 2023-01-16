@@ -103,10 +103,13 @@ public class ConverterService {
                 .add("nightTemperature", "double", true);
         Dataset<Row> dataFrame = sparkSession.createDataFrame(subtract, schema);*/
 
-        Dataset<Row> dataFrame = correlateDate(dataset);
+        // ~7 sec for 5000 rows
+//        Dataset<Row> dataFrame = correlateDate(dataset);
+        // ~3.5 sec per 5000 rows
+        Dataset<Row> dataFrame = correlateDateWithSqlContext(dataset);
 
-//        dataset.as(Encoders.bean(DailyTemperatureDto.class))
         dataFrame
+//                .as(Encoders.bean(DailyTemperatureDto.class))
                 .drop("id")
                 .write()
                 .format("mongodb")
@@ -125,5 +128,17 @@ public class ConverterService {
                 .peek(dto -> dto.setDate(dto.getDate().atTime(LocalTime.MIN).toLocalDate().plusDays(1L)))
                 .collect(Collectors.toList());
         return sparkSession.createDataFrame(dtos, DailyTemperatureDto.class);
+    }
+
+    private <T> Dataset<Row> correlateDateWithSqlContext(Dataset<T> dataset) {
+        dataset.createOrReplaceTempView("daily_temperature");
+        return dataset.sqlContext()
+//                .sql("UPDATE daily_temperature SET `date` = DATE_ADD(`date`, INTERVAL 1 DAY) ");
+//                .sql("UPDATE daily_temperature SET `date` = DATE_ADD(to_date(date,'yyyy-MM-dd'), 1)"); // not supported o_O
+                .sql(
+                        "SELECT id, morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature," +
+                                "DATE_ADD(to_date(date,'yyyy-MM-dd'), 1) as date " +
+                                "FROM daily_temperature"
+                );
     }
 }

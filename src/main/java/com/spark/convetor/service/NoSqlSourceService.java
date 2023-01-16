@@ -25,12 +25,13 @@ import static java.nio.file.StandardOpenOption.WRITE;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class NoSqlSourceService {
+public class NoSqlSourceService implements SourceService<DailyTemperatureDto>{
     private final DataFrameReader mongoReader;
     private final SparkMongoDbSettings mongoDbSettings;
     private final ObjectMapper objectMapper;
 
-    public List<DailyTemperatureDto> readFromDb()  {
+   @Override
+    public List<DailyTemperatureDto> readFromDB()  {
         StopWatch stopWatch = new StopWatch();
         Dataset<Row> rowDataset = mongoReader.load();
         rowDataset.printSchema();
@@ -50,7 +51,8 @@ public class NoSqlSourceService {
     }
 
     @SneakyThrows
-    public void exportToJson() {
+    @Override
+    public void exportToFileSystem() {
         Path pathToOutputJsonFile = Paths.get(".").normalize().resolve(mongoDbSettings.getCollection() + ".json");
         Files.deleteIfExists(pathToOutputJsonFile);
      /*   mongoReader.load()

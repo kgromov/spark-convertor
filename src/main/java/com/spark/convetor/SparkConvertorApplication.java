@@ -2,7 +2,6 @@ package com.spark.convetor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.spark.convetor.model.DailyTemperatureDto;
 import com.spark.convetor.service.ConverterService;
 import com.spark.convetor.service.NoSqlSourceService;
 import com.spark.convetor.service.SqlSourceService;
@@ -11,8 +10,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-
-import java.util.List;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
@@ -39,10 +36,10 @@ public class SparkConvertorApplication {
                                                NoSqlSourceService noSqlSourceService,
                                                ConverterService converterService) {
         return args -> {
-			/*List<DailyTemperatureDto> dailyTemperatureDtos = sqlSourceService.readFromDb();
-			sqlSourceService.exportToCsv();*/
-            /*List<DailyTemperatureDto> dailyTemperatureDtos = noSqlSourceService.readFromDb();
-            noSqlSourceService.exportToJson();*/
+			/*List<DailyTemperatureDto> dailyTemperatureDtos = sqlSourceService.readFromDB();
+			sqlSourceService.exportToFileSystem();*/
+            /*List<DailyTemperatureDto> dailyTemperatureDtos = noSqlSourceService.readFromDB();
+            noSqlSourceService.exportToFileSystem();*/
 //            converterService.syncNoSqlWithSql();
             converterService.fromSqlToNoSql();
         };

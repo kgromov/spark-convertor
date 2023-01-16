@@ -28,13 +28,14 @@ import static java.nio.file.StandardOpenOption.WRITE;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class SqlSourceService {
+public class SqlSourceService implements SourceService<DailyTemperatureDto> {
     private final DataFrameReader jdbcReader;
     private final SparkJdbcSettings jdbcSettings;
     private final ObjectMapper objectMapper;
     private final DailyTemperatureDtoRowMapper rowMapper;
 
-    public List<DailyTemperatureDto> readFromDb() {
+    @Override
+    public List<DailyTemperatureDto> readFromDB() {
         // TODO: try with more specific one - jdbc(url,table,properties)
 //        return serializeAllFromJson();
 //        return serializeWithMapAndBeanEncoder();
@@ -44,7 +45,8 @@ public class SqlSourceService {
     // Does not work due to:
     // Caused by: java.io.IOException: Cannot run program "\bin\winutils.exe": CreateProcess error=216, This version of %1 is not compatible with the version of Windows you're running.
     @SneakyThrows
-    public void exportToCsv() {
+    @Override
+    public void exportToFileSystem() {
         Path pathToOutputCsvFile = Paths.get(".").normalize().resolve(jdbcSettings.getTableName() + ".csv");
         Dataset<Row> rows = jdbcReader.load();
       /*  Files.deleteIfExists(pathToOutputCsvFile);
