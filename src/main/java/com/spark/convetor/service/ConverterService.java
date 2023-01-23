@@ -27,7 +27,7 @@ public class ConverterService {
         Dataset<Row> dataset = jdbcReader.load()
 //                .drop("id")
                 .distinct();
-        saveToMongo(dataset);
+        saveToMongo(dataset, SaveMode.Overwrite);
     }
 
     public void fromNoSqlToSql() {
@@ -43,27 +43,20 @@ public class ConverterService {
         JavaRDD<Row> subtract = jdbcDataset.toJavaRDD().subtract(mongoDataset.toJavaRDD());
 //        sparkSession.createDataFrame(subtract, jdbcDataset.schema());
 
-
-        Dataset<Row> diffDataset = /*jdbcDataset.join(mongoDataset, mongoDataset.col("date").eqNullSafe(jdbcDataset.col("date")), "left")
+        Dataset<Row> diffDataset = jdbcDataset.as("j")
+                .join(mongoDataset.as("m"),
+                        mongoDataset.col("date").eqNullSafe(jdbcDataset.col("date")),
+                        "left"
+                )
                 .where(mongoDataset.col("date").isNull())
-                .distinct()
-                .withColumns(Map.of(
-                        "date", mongoDataset.col("date"),
-                        "morningTemperature", mongoDataset.col("morningTemperature"),
-                        "afternoonTemperature", mongoDataset.col("afternoonTemperature"),
-                        "eveningTemperature", mongoDataset.col("eveningTemperature"),
-                        "nightTemperature", mongoDataset.col("nightTemperature")
-                ));*/
-                jdbcDataset.as("j").join(mongoDataset.as("m"), mongoDataset.col("date").eqNullSafe(jdbcDataset.col("date")), "left")
-                        .where(mongoDataset.col("date").isNull())
-                        .select("j.id",
-                                "j.date",
-                                "j.morningTemperature",
-                                "j.afternoonTemperature",
-                                "j.eveningTemperature",
-                                "j.nightTemperature"
-                        );
-        saveToMongo(diffDataset);
+                .select("j.id",
+                        "j.date",
+                        "j.morningTemperature",
+                        "j.afternoonTemperature",
+                        "j.eveningTemperature",
+                        "j.nightTemperature"
+                );
+        saveToMongo(diffDataset, SaveMode.Overwrite);
     }
 
     public void syncSqlWithNoSql() {
@@ -87,27 +80,13 @@ public class ConverterService {
                 .save();
     }
 
-    private <T> void saveToMongo(Dataset<T> dataset) {
+    public <T> void saveToMongo(Dataset<T> dataset, SaveMode saveMode) {
 //        log.info("Diff = {}", dataset.toJSON().collectAsList().toString());
-        log.info("Diff: count = {}", dataset.count());
+        log.info("Dataset count = {}", dataset.count());
         log.info("Columns: {}", dataset.columns());
         dataset.printSchema();    // just String java type converted to Date and that's it - why on earth?
 
-        // attempt to explicitly define schema (date as string) failed
-     /*   JavaRDD<Row> subtract = dataset.drop("id").toJavaRDD();
-        StructType schema = new StructType()
-                .add("date", "string", false)
-                .add("morningTemperature", "double", true)
-                .add("afternoonTemperature", "double", true)
-                .add("eveningTemperature", "double", true)
-                .add("nightTemperature", "double", true);
-        Dataset<Row> dataFrame = sparkSession.createDataFrame(subtract, schema);*/
-
-        // ~7 sec for 5000 rows
-//        Dataset<Row> dataFrame = correlateDate(dataset);
-        // ~3.5 sec per 5000 rows
         Dataset<Row> dataFrame = correlateDateWithSqlContext(dataset);
-
         dataFrame
 //                .as(Encoders.bean(DailyTemperatureDto.class))
                 .drop("id")
@@ -117,7 +96,7 @@ public class ConverterService {
                 .option("connection.uri", mongoDbSettings.getUri())
                 .option("database", mongoDbSettings.getDatabase())
                 .option("collection", mongoDbSettings.getCollection())
-                .mode(SaveMode.Overwrite)
+                .mode(saveMode)
                 .save();
     }
 

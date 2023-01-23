@@ -5,23 +5,26 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 import javax.annotation.PostConstruct;
 
+import static org.apache.hadoop.shaded.org.apache.commons.lang3.StringUtils.isBlank;
+
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
 public class SparkConfig {
-    @Autowired private Environment environment;
+    private final Environment environment;
 
     @PostConstruct
     public void init() {
         String sparkHome = environment.getProperty("SPARK_HOME");
-//        System.setProperty("hadoop.home.dir", "C:\\apache\\spark\\winutils");
+        if (isBlank(sparkHome)) {
+            return;
+        }
         System.setProperty("hadoop.home.dir", sparkHome);
         System.setProperty("HADOOP_HOME", sparkHome);
         log.info("SPARK_HOME = {}", sparkHome);
@@ -32,7 +35,7 @@ public class SparkConfig {
     public SparkConf sparkConf() {
         return new SparkConf()
                 .setMaster("local")
-                .setSparkHome(environment.getProperty("SPARK_HOME"))
+//                .setSparkHome(environment.getProperty("SPARK_HOME"))
                 .setAppName("Spark converter")
 //                .set("spark.sql.datetime.java8API.enabled", "true")
          /*       .set("spark.mongodb.input.uri", "mongodb://localhost/DB.Collection")

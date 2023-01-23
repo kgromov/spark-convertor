@@ -18,7 +18,11 @@ import org.springframework.util.StopWatch;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -36,25 +40,16 @@ public class SqlSourceService implements SourceService<DailyTemperatureDto> {
 
     @Override
     public List<DailyTemperatureDto> readFromDB() {
-        // TODO: try with more specific one - jdbc(url,table,properties)
 //        return serializeAllFromJson();
 //        return serializeWithMapAndBeanEncoder();
         return serializeFromRowDataset();
     }
 
-    // Does not work due to:
-    // Caused by: java.io.IOException: Cannot run program "\bin\winutils.exe": CreateProcess error=216, This version of %1 is not compatible with the version of Windows you're running.
-    @SneakyThrows
+   @SneakyThrows
     @Override
     public void exportToFileSystem() {
         Path pathToOutputCsvFile = Paths.get(".").normalize().resolve(jdbcSettings.getTableName() + ".csv");
         Dataset<Row> rows = jdbcReader.load();
-      /*  Files.deleteIfExists(pathToOutputCsvFile);
-        rows.write()
-                .format("csv")
-                .option("header", true)
-                .option("delimiter", ";")
-                .csv(pathToOutputCsvFile.toFile().getAbsolutePath());*/
         String header = String.join(",", rows.columns());
         String content = rows.toJSON().collectAsList().toString();
 
@@ -82,7 +77,6 @@ public class SqlSourceService implements SourceService<DailyTemperatureDto> {
         return String.join(",", fieldValues);
     }
 
-    // Around 4000 + 4000 ms
     private List<DailyTemperatureDto> serializeAllFromJson() {
         StopWatch stopWatch = new StopWatch();
         Dataset<String> jsonDS = jdbcReader.load().toJSON();
@@ -102,7 +96,6 @@ public class SqlSourceService implements SourceService<DailyTemperatureDto> {
         }
     }
 
-    // Does not work due to: Caused by: java.io.NotSerializableException: org.apache.spark.sql.DataFrameReader
     private List<DailyTemperatureDto> serializeWithMapAndBeanEncoder() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start("serializeWithMapAndBeanEncoder");
@@ -128,13 +121,5 @@ public class SqlSourceService implements SourceService<DailyTemperatureDto> {
         log.info("Time to serializeFromRowRow {} ms", stopWatch.getLastTaskTimeMillis());
         log.info("Read temperatures from SQL db (total records): {}", temperatureDtos.size());
         return temperatureDtos;
-    }
-
-    private DailyTemperatureDto fromJson(String json) {
-        try {
-            return objectMapper.readValue(json, DailyTemperatureDto.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
