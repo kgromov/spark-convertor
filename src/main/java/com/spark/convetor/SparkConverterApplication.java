@@ -1,6 +1,6 @@
 package com.spark.convetor;
 
-import com.spark.convetor.messaging.BrokerSettings;
+import com.aqmp.example.config.BrokerSettings;
 import com.spark.convetor.messaging.DbSourceType;
 import com.spark.convetor.messaging.SyncEvent;
 import com.spark.convetor.service.ConverterService;
@@ -9,14 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 import java.time.LocalDate;
 
-@Slf4j
 @SpringBootApplication
-@EnableConfigurationProperties(BrokerSettings.class)
+@Slf4j
 public class SparkConverterApplication {
 
     public static void main(String[] args) {
@@ -25,8 +23,10 @@ public class SparkConverterApplication {
 
     @Bean
     public ApplicationRunner applicationRunner(SyncTemperatureService syncTemperatureService,
-                                               ConverterService converterService) {
+                                               ConverterService converterService,
+                                               BrokerSettings brokerSettings) {
         return args -> {
+            log.info("Broker settings: {}", brokerSettings.getExchangeName());
 //            converterService.syncNoSqlWithSql();
 //            converterService.fromSqlToNoSql();
 
