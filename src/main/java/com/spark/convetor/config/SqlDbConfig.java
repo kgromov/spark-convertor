@@ -6,6 +6,7 @@ import org.apache.spark.sql.SparkSession;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
 @RequiredArgsConstructor
@@ -13,8 +14,16 @@ public class SqlDbConfig {
     private final SparkSession sparkSession;
 
     @Bean
-    @ConfigurationProperties(prefix = "spark.jdbc.source")
-    public SparkJdbcSettings jdbcSettings() {
+    @Profile({"!postgres", "mysql"})
+    @ConfigurationProperties(prefix = "spark.jdbc.mysql.source")
+    public SparkJdbcSettings mySqlJdbcSettings() {
+        return new SparkJdbcSettings();
+    }
+
+    @Bean
+    @Profile({"postgres"})
+    @ConfigurationProperties(prefix = "spark.jdbc.postgres.source")
+    public SparkJdbcSettings postgresJdbcSettings() {
         return new SparkJdbcSettings();
     }
 
