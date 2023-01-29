@@ -20,12 +20,11 @@ public class SyncTemperatureService {
     private final DataFrameReader jdbcReader;
     private final ConverterService converterService;
 
-    // TODO: decouple logic for input data sources - inject list of possible here
     public void syncData(SyncEvent event) {
         log.info("Start temperature sync ...");
         Dataset<Row> jdbcDataset = jdbcReader.load();
+        jdbcDataset.columns();
         Dataset<Row> dataset = jdbcDataset
-                .where(jdbcDataset.col("date").$greater$eq(event.getStartDate()))
                 .select(
                         jdbcDataset.col("id").as("id"),
                         jdbcDataset.col("date").as("date"),
@@ -33,7 +32,8 @@ public class SyncTemperatureService {
                         jdbcDataset.col("afternoon_temperature").as("afternoonTemperature"),
                         jdbcDataset.col("evening_temperature").as("eveningTemperature"),
                         jdbcDataset.col("night_temperature").as("nightTemperature")
-                );
+                )
+                .where(jdbcDataset.col("date").$greater$eq(event.getStartDate()));
        /* List<DailyTemperatureDto> dataToSync = dataset
                 .as(Encoders.bean(DailyTemperatureDto.class))
                 .collectAsList();
