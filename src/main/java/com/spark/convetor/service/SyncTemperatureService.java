@@ -12,6 +12,7 @@ import org.apache.spark.sql.SaveMode;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -23,15 +24,14 @@ public class SyncTemperatureService {
     public void syncData(SyncEvent event) {
         log.info("Start temperature sync ...");
         Dataset<Row> jdbcDataset = jdbcReader.load();
-        jdbcDataset.columns();
         Dataset<Row> dataset = jdbcDataset
                 .select(
-                        jdbcDataset.col("id").as("id"),
-                        jdbcDataset.col("date").as("date"),
-                        jdbcDataset.col("morning_temperature").as("morningTemperature"),
-                        jdbcDataset.col("afternoon_temperature").as("afternoonTemperature"),
-                        jdbcDataset.col("evening_temperature").as("eveningTemperature"),
-                        jdbcDataset.col("night_temperature").as("nightTemperature")
+                        jdbcDataset.col("id"),
+                        jdbcDataset.col("date"),
+                        jdbcDataset.col("morningTemperature"),
+                        jdbcDataset.col("afternoonTemperature"),
+                        jdbcDataset.col("eveningTemperature"),
+                        jdbcDataset.col("nightTemperature")
                 )
                 .where(jdbcDataset.col("date").$greater$eq(event.getStartDate()));
        /* List<DailyTemperatureDto> dataToSync = dataset
