@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.support.converter.StringJsonMessageConverter;
 
 import java.time.LocalDate;
+import java.util.function.Consumer;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
@@ -55,5 +56,13 @@ public class SparkConverterApplication {
     @Bean
     public StringJsonMessageConverter jsonConverter() {
         return new StringJsonMessageConverter();
+    }
+
+    @Bean
+    public Consumer<SyncEvent> weatherEventConsumer(SyncTemperatureService syncTemperatureService) {
+        return syncEvent -> {
+            log.info("Sync temperature since {}", syncEvent.getStartDate());
+            syncTemperatureService.syncData(syncEvent);
+        };
     }
 }
